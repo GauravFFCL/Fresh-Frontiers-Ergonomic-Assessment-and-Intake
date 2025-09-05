@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ergonomic Assessment - Fresh Frontiers Consultancy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .form-section {
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        h1, h2, h3 {
+            font-weight: 600;
+            color: #0072ce;
+            margin-bottom: 1rem;
+        }
+        .grid-col-2 {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 1rem;
+        }
+        @media (min-width: 640px) {
+            .grid-col-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #0072ce;
+            box-shadow: 0 0 0 3px rgba(0, 114, 206, 0.2);
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        .strain-table {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: collapse;
+        }
+        .strain-table th, .strain-table td {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        .strain-table th {
+            background-color: #e5e7eb;
+            font-weight: 600;
+        }
+        .strain-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .result-box {
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.25rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .result-box.safe {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .result-box.risk {
+            background-color: #ffedd5;
+            color: #9a3412;
+        }
+        .result-box.hazardous {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .privacy-statement {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 2rem;
+            text-align: center;
+        }
+        footer {
+            text-align: center;
+            padding: 1rem 0;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+        .btn-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .btn {
+            background-color: #0072ce;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #005aa3;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #0072ce;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Styles for the printable report (hidden until PDF generation) */
+        .printable-report {
+            background-color: white;
+            padding: 2rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            left: -9999px; /* Hide from view */
+            width: 794px; /* A4 width at 96 dpi */
+        }
+        .printable-page {
+            box-sizing: border-box;
+            padding: 1cm;
+        }
+    </style>
+</head>
+<body>
+
+<!-- The main interactive form -->
+<div class="container" id="assessment-form">
+    <header class="text-center py-6">
+        <h1 class="text-3xl">Fresh Frontiers Consultancy Ltd.</h1>
+        <h2 class="text-xl text-gray-600 mt-2">Ergonomic Assessment Report</h2>
+    </header>
+
+    <!-- Intake Form -->
+    <div class="form-section" id="section-intake">
+        <h3 class="text-2xl">INTAKE FORM</h3>
+        <hr class="my-4">
+        
+        <h4 class="text-lg font-semibold mb-3">Personal Information</h4>
+        <div class="grid-col-2">
+            <div class="input-group">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="gender">Gender:</label>
+                <select id="gender" name="gender" class="rounded-lg">
+                    <option value="">Select...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="age">Age:</label>
+                <input type="number" id="age" name="age" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="height">Height:</label>
+                <input type="text" id="height" name="height" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="weight">Weight:</label>
+                <input type="text" id="weight" name="weight" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="handDominance">Hand Dominance:</label>
+                <select id="handDominance" name="handDominance" class="rounded-lg">
+                    <option value="">Select...</option>
+                    <option value="Right">Right</option>
+                    <option value="Left">Left</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="eyeDominance">Eye Dominance:</label>
+                <select id="eyeDominance" name="eyeDominance" class="rounded-lg">
+                    <option value="">Select...</option>
+                    <option value="Right">Right</option>
+                    <option value="Left">Left</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="jobTitle">Job Title/Role:</label>
+                <input type="text" id="jobTitle" name="jobTitle" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="shiftTiming">Shift Timing:</label>
+                <select id="shiftTiming" name="shiftTiming" class="rounded-lg">
+                    <option value="">Select...</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Evening">Evening</option>
+                    <option value="Overnight">Overnight</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="workLocation">Work Location:</label>
+                <input type="text" id="workLocation" name="workLocation" class="rounded-lg">
+            </div>
+        </div>
+
+        <h4 class="text-lg font-semibold mt-6 mb-3">Personal Factors</h4>
+        <div class="grid-col-2">
+            <div class="input-group">
+                <label for="medicalHistory">Medical History:</label>
+                <textarea id="medicalHistory" name="medicalHistory" rows="3" class="rounded-lg"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="physicalActivity">Physical Activity:</label>
+                <textarea id="physicalActivity" name="physicalActivity" rows="3" class="rounded-lg"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="sleepPatterns">Sleep Patterns:</label>
+                <textarea id="sleepPatterns" name="sleepPatterns" rows="3" class="rounded-lg"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="visionAssistance">Vision Assistance:</label>
+                <textarea id="visionAssistance" name="visionAssistance" rows="3" class="rounded-lg"></textarea>
+            </div>
+        </div>
+
+        <h4 class="text-lg font-semibold mt-6 mb-3">Environmental Factors</h4>
+        <div class="grid-col-2">
+            <div class="input-group">
+                <label for="illumination">Illumination Factors:</label>
+                <textarea id="illumination" name="illumination" rows="3" class="rounded-lg"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="noise">Noise Factors:</label>
+                <textarea id="noise" name="noise" rows="3" class="rounded-lg"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="temperature">Temperature Factors:</label>
+                <textarea id="temperature" name="temperature" rows="3" class="rounded-lg"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="vibration">Vibration:</label>
+                <textarea id="vibration" name="vibration" rows="3" class="rounded-lg"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOORE-GARG STRAIN INDEX -->
+    <div class="form-section" id="section-strain-index">
+        <h3 class="text-2xl">MOORE-GARG STRAIN INDEX</h3>
+        <hr class="my-4">
+        <div class="table-container">
+            <table class="strain-table">
+                <thead>
+                    <tr>
+                        <th class="w-1/4">RISK FACTOR</th>
+                        <th class="w-1/4">RATING CRITERION</th>
+                        <th class="w-1/4">OBSERVATION</th>
+                        <th class="w-1/4">RATINGS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>INTENSITY OF EXERTION [BORG SCALE]</td>
+                        <td>
+                            <select id="intensity" onchange="updateStrainIndex()">
+                                <option value="Light">Light</option>
+                                <option value="Somewhat Hard">Somewhat Hard</option>
+                                <option value="Hard">Hard</option>
+                                <option value="Very Hard">Very Hard</option>
+                                <option value="Near Maximal">Near Maximal</option>
+                            </select>
+                        </td>
+                        <td id="obs_intensity"></td>
+                        <td id="rating_intensity"></td>
+                    </tr>
+                    <tr>
+                        <td>DURATION OF EXERTION (% OF CYCLE)</td>
+                        <td>
+                            <select id="duration" onchange="updateStrainIndex()">
+                                <option value="< 10%">< 10%</option>
+                                <option value="10 - 29%">10 - 29%</option>
+                                <option value="30 - 49%">30 - 49%</option>
+                                <option value="50 - 79%">50 - 79%</option>
+                                <option value="> 80%">> 80%</option>
+                            </select>
+                        </td>
+                        <td id="obs_duration"></td>
+                        <td id="rating_duration"></td>
+                    </tr>
+                    <tr>
+                        <td>EFFORTS PER MINUTE</td>
+                        <td>
+                            <select id="efforts" onchange="updateStrainIndex()">
+                                <option value="< 4">< 4</option>
+                                <option value="4 to 8">4 to 8</option>
+                                <option value="9 to 14">9 to 14</option>
+                                <option value="15 to 19">15 to 19</option>
+                                <option value="> 20">> 20</option>
+                            </select>
+                        </td>
+                        <td id="obs_efforts"></td>
+                        <td id="rating_efforts"></td>
+                    </tr>
+                    <tr>
+                        <td>HAND/WRIST POSTURE</td>
+                        <td>
+                            <select id="posture" onchange="updateStrainIndex()">
+                                <option value="Very Good">Very Good</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Bad">Bad</option>
+                                <option value="Very Bad">Very Bad</option>
+                            </select>
+                        </td>
+                        <td id="obs_posture"></td>
+                        <td id="rating_posture"></td>
+                    </tr>
+                    <tr>
+                        <td>SPEED OF WORK</td>
+                        <td>
+                            <select id="speed" onchange="updateStrainIndex()">
+                                <option value="Very Slow">Very Slow</option>
+                                <option value="Slow">Slow</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Fast">Fast</option>
+                                <option value="Very Fast">Very Fast</option>
+                            </select>
+                        </td>
+                        <td id="obs_speed"></td>
+                        <td id="rating_speed"></td>
+                    </tr>
+                    <tr>
+                        <td>DURATION OF TASK PER DAY (HOURS)</td>
+                        <td>
+                            <select id="taskDuration" onchange="updateStrainIndex()">
+                                <option value="< 1">< 1</option>
+                                <option value="1 to 2">1 to 2</option>
+                                <option value="2 to 4">2 to 4</option>
+                                <option value="4 to 8">4 to 8</option>
+                                <option value="> 8">> 8</option>
+                            </select>
+                        </td>
+                        <td id="obs_taskDuration"></td>
+                        <td id="rating_taskDuration"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Strain Index Rating & Result Key -->
+    <div class="form-section" id="section-strain-result">
+        <h3 class="text-2xl">Strain Index Rating</h3>
+        <hr class="my-4">
+        <div class="text-center text-lg font-bold mb-4">
+            Total Strain Index (SI) = <span id="strainIndexResult">0</span>
+        </div>
+
+        <h3 class="text-2xl mt-8">Result Key</h3>
+        <hr class="my-4">
+        <div class="result-box mt-4" id="resultKey">
+            Select an option from the above table to see the result.
+        </div>
+    </div>
+    
+    <!-- Final Details -->
+    <div class="form-section" id="section-final-details">
+        <h3 class="text-2xl">Final Details</h3>
+        <hr class="my-4">
+        <div class="grid-col-2">
+            <div class="input-group">
+                <label for="assessedBy">Assessed By:</label>
+                <input type="text" id="assessedBy" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="reviewedBy">Reviewed By:</label>
+                <input type="text" id="reviewedBy" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" class="rounded-lg">
+            </div>
+            <div class="input-group">
+                <label for="preparedBy">Prepared by:</label>
+                <input type="text" id="preparedBy" class="rounded-lg">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="btn-container">
+        <button id="save-pdf-btn" class="btn">Download Report</button>
+    </div>
+
+    <div class="privacy-statement mt-8">
+        <p>Intended for Fresh Frontiers Consultancy</p>
+        <p class="mt-2">Privacy & Confidentiality Statement: All information collected is kept confidential and used solely for ergonomics assessment purposes.</p>
+    </div>
+    <footer>
+        <p>&copy; Fresh Frontiers Consultancy Pvt. Ltd. | All Rights Reserved</p>
+    </footer>
+</div>
+
+<div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
+</div>
+
+<!-- This is the hidden div that will be populated and used for PDF generation -->
+<div class="printable-report" id="printable-report"></div>
+
+<script>
+    // Data for the Moore-Garg Strain Index
+    const strainIndexData = {
+        intensity: {
+            "Light": { obs: "Barely noticeable or relaxed effort [0-2]", rating: 1, criterion: "Light" },
+            "Somewhat Hard": { obs: "Noticeable or definite effort [3]", rating: 3, criterion: "Somewhat Hard" },
+            "Hard": { obs: "Obvious effort - Unchanged expression [4-5]", rating: 6, criterion: "Hard" },
+            "Very Hard": { obs: "Substantial effort - Changed expression [6-7]", rating: 9, criterion: "Very Hard" },
+            "Near Maximal": { obs: "Uses Shoulder or Trunk force [8-10]", rating: 13, criterion: "Near Maximal" },
+        },
+        duration: {
+            "< 10%" : { obs: "NA", rating: 0.5, criterion: "< 10%" },
+            "10 - 29%": { obs: "NA", rating: 1, criterion: "10 - 29%" },
+            "30 - 49%": { obs: "NA", rating: 1.5, criterion: "30 - 49%" },
+            "50 - 79%": { obs: "NA", rating: 2, criterion: "50 - 79%" },
+            "> 80%": { obs: "NA", rating: 3, criterion: "> 80%" },
+        },
+        efforts: {
+            "< 4": { obs: "NA", rating: 0.5, criterion: "< 4" },
+            "4 to 8": { obs: "NA", rating: 1, criterion: "4 to 8" },
+            "9 to 14": { obs: "NA", rating: 1.5, criterion: "9 to 14" },
+            "15 to 19": { obs: "NA", rating: 2, criterion: "15 to 19" },
+            "> 20": { obs: "NA", rating: 3, criterion: "> 20" },
+        },
+        posture: {
+            "Very Good": { obs: "Perfectly Neutral", rating: 1, criterion: "Very Good" },
+            "Good": { obs: "Near Neutral", rating: 1, criterion: "Good" },
+            "Fair": { obs: "Non-Neutral", rating: 1.5, criterion: "Fair" },
+            "Bad": { obs: "Marked Deviation", rating: 2, criterion: "Bad" },
+            "Very Bad": { obs: "Near Extreme", rating: 3, criterion: "Very Bad" },
+        },
+        speed: {
+            "Very Slow": { obs: "Extremely Relaxed Pace", rating: 1, criterion: "Very Slow" },
+            "Slow": { obs: "Taking One's Own Time", rating: 2, criterion: "Slow" },
+            "Fair": { obs: "Normal Speed of Motion", rating: 1, criterion: "Fair" },
+            "Fast": { obs: "Rushed, but able to keep up", rating: 1.5, criterion: "Fast" },
+            "Very Fast": { obs: "Rushed and barely / Unable to keep up", rating: 2, criterion: "Very Fast" },
+        },
+        taskDuration: {
+            "< 1": { obs: "NA", rating: 0.25, criterion: "< 1" },
+            "1 to 2": { obs: "NA", rating: 0.5, criterion: "1 to 2" },
+            "2 to 4": { obs: "NA", rating: 0.75, criterion: "2 to 4" },
+            "4 to 8": { obs: "NA", rating: 1, criterion: "4 to 8" },
+            "> 8": { obs: "NA", rating: 1.5, criterion: "> 8" },
+        },
+    };
+
+    function updateStrainIndex() {
+        const intensitySelect = document.getElementById('intensity');
+        const durationSelect = document.getElementById('duration');
+        const effortsSelect = document.getElementById('efforts');
+        const postureSelect = document.getElementById('posture');
+        const speedSelect = document.getElementById('speed');
+        const taskDurationSelect = document.getElementById('taskDuration');
+
+        document.getElementById('obs_intensity').textContent = strainIndexData.intensity[intensitySelect.value]?.obs || '';
+        document.getElementById('rating_intensity').textContent = strainIndexData.intensity[intensitySelect.value]?.rating || '';
+        document.getElementById('obs_duration').textContent = strainIndexData.duration[durationSelect.value]?.obs || '';
+        document.getElementById('rating_duration').textContent = strainIndexData.duration[durationSelect.value]?.rating || '';
+        document.getElementById('obs_efforts').textContent = strainIndexData.efforts[effortsSelect.value]?.obs || '';
+        document.getElementById('rating_efforts').textContent = strainIndexData.efforts[effortsSelect.value]?.rating || '';
+        document.getElementById('obs_posture').textContent = strainIndexData.posture[postureSelect.value]?.obs || '';
+        document.getElementById('rating_posture').textContent = strainIndexData.posture[postureSelect.value]?.rating || '';
+        document.getElementById('obs_speed').textContent = strainIndexData.speed[speedSelect.value]?.obs || '';
+        document.getElementById('rating_speed').textContent = strainIndexData.speed[speedSelect.value]?.rating || '';
+        document.getElementById('obs_taskDuration').textContent = strainIndexData.taskDuration[taskDurationSelect.value]?.obs || '';
+        document.getElementById('rating_taskDuration').textContent = strainIndexData.taskDuration[taskDurationSelect.value]?.rating || '';
+
+        const si = parseFloat(document.getElementById('rating_intensity').textContent) *
+                   parseFloat(document.getElementById('rating_duration').textContent) *
+                   parseFloat(document.getElementById('rating_efforts').textContent) *
+                   parseFloat(document.getElementById('rating_posture').textContent) *
+                   parseFloat(document.getElementById('rating_speed').textContent) *
+                   parseFloat(document.getElementById('rating_taskDuration').textContent);
+
+        document.getElementById('strainIndexResult').textContent = si.toFixed(2);
+        
+        const resultKeyBox = document.getElementById('resultKey');
+        resultKeyBox.classList.remove('safe', 'risk', 'hazardous');
+        let message = '';
+        if (si <= 3) {
+            resultKeyBox.classList.add('safe');
+            message = "Job is probably safe";
+        } else if (si > 3 && si <= 7) {
+            resultKeyBox.classList.add('risk');
+            message = "Job may place individual at increased risk for distal upper extremity disorders";
+        } else {
+            resultKeyBox.classList.add('hazardous');
+            message = "Job is probably hazardous";
+        }
+        resultKeyBox.innerHTML = `<span>Strain Index is ${si.toFixed(2)}</span><br>${message}`;
+    }
+
+    async function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const formElement = document.getElementById('assessment-form');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const printableReport = document.getElementById('printable-report');
+        
+        // Populate a hidden, printable version of the report
+        printableReport.innerHTML = `
+            <div id="page-1" class="printable-page">
+                <header class="text-center pb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">Fresh Frontiers Consultancy Ltd.</h1>
+                    <h2 class="text-xl text-gray-600 mt-2">Ergonomic Assessment Report</h2>
+                </header>
+                <h3 class="text-2xl font-semibold mb-4 text-blue-700">INTAKE FORM</h3>
+                <hr class="my-4 border-gray-300">
+                <h4 class="text-lg font-semibold mb-3">Personal Information</h4>
+                <div class="grid-col-2">
+                    <div><b>Name:</b> <span class="pl-2">${document.getElementById('name').value}</span></div>
+                    <div><b>Gender:</b> <span class="pl-2">${document.getElementById('gender').value}</span></div>
+                    <div><b>Age:</b> <span class="pl-2">${document.getElementById('age').value}</span></div>
+                    <div><b>Height:</b> <span class="pl-2">${document.getElementById('height').value}</span></div>
+                    <div><b>Weight:</b> <span class="pl-2">${document.getElementById('weight').value}</span></div>
+                    <div><b>Hand Dominance:</b> <span class="pl-2">${document.getElementById('handDominance').value}</span></div>
+                    <div><b>Eye Dominance:</b> <span class="pl-2">${document.getElementById('eyeDominance').value}</span></div>
+                    <div><b>Job Title/Role:</b> <span class="pl-2">${document.getElementById('jobTitle').value}</span></div>
+                    <div><b>Shift Timing:</b> <span class="pl-2">${document.getElementById('shiftTiming').value}</span></div>
+                    <div><b>Work Location:</b> <span class="pl-2">${document.getElementById('workLocation').value}</span></div>
+                </div>
+                <h4 class="text-lg font-semibold mt-6 mb-3">Personal Factors</h4>
+                <div class="grid-col-2">
+                    <div><b>Medical History:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('medicalHistory').value}</p></div>
+                    <div><b>Physical Activity:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('physicalActivity').value}</p></div>
+                    <div><b>Sleep Patterns:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('sleepPatterns').value}</p></div>
+                    <div><b>Vision Assistance:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('visionAssistance').value}</p></div>
+                </div>
+                <h4 class="text-lg font-semibold mt-6 mb-3">Environmental Factors</h4>
+                <div class="grid-col-2">
+                    <div><b>Illumination Factors:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('illumination').value}</p></div>
+                    <div><b>Noise Factors:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('noise').value}</p></div>
+                    <div><b>Temperature Factors:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('temperature').value}</p></div>
+                    <div><b>Vibration:</b> <p class="pl-2 whitespace-pre-wrap">${document.getElementById('vibration').value}</p></div>
+                </div>
+            </div>
+            
+            <div id="page-2" class="printable-page">
+                <h3 class="text-2xl font-semibold mb-4 text-blue-700">MOORE-GARG STRAIN INDEX</h3>
+                <hr class="my-4 border-gray-300">
+                <table class="strain-table">
+                    <thead>
+                        <tr><th>RISK FACTOR</th><th>RATING CRITERION</th><th>OBSERVATION</th><th>RATINGS</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>INTENSITY OF EXERTION</td><td>${strainIndexData.intensity[document.getElementById('intensity').value].criterion}</td><td>${strainIndexData.intensity[document.getElementById('intensity').value].obs}</td><td>${strainIndexData.intensity[document.getElementById('intensity').value].rating}</td></tr>
+                        <tr><td>DURATION OF EXERTION</td><td>${strainIndexData.duration[document.getElementById('duration').value].criterion}</td><td>${strainIndexData.duration[document.getElementById('duration').value].obs}</td><td>${strainIndexData.duration[document.getElementById('duration').value].rating}</td></tr>
+                        <tr><td>EFFORTS PER MINUTE</td><td>${strainIndexData.efforts[document.getElementById('efforts').value].criterion}</td><td>${strainIndexData.efforts[document.getElementById('efforts').value].obs}</td><td>${strainIndexData.efforts[document.getElementById('efforts').value].rating}</td></tr>
+                        <tr><td>HAND/WRIST POSTURE</td><td>${strainIndexData.posture[document.getElementById('posture').value].criterion}</td><td>${strainIndexData.posture[document.getElementById('posture').value].obs}</td><td>${strainIndexData.posture[document.getElementById('posture').value].rating}</td></tr>
+                        <tr><td>SPEED OF WORK</td><td>${strainIndexData.speed[document.getElementById('speed').value].criterion}</td><td>${strainIndexData.speed[document.getElementById('speed').value].obs}</td><td>${strainIndexData.speed[document.getElementById('speed').value].rating}</td></tr>
+                        <tr><td>DURATION OF TASK</td><td>${strainIndexData.taskDuration[document.getElementById('taskDuration').value].criterion}</td><td>${strainIndexData.taskDuration[document.getElementById('taskDuration').value].obs}</td><td>${strainIndexData.taskDuration[document.getElementById('taskDuration').value].rating}</td></tr>
+                    </tbody>
+                </table>
+                <h3 class="text-2xl font-semibold mt-8 text-blue-700">Strain Index Rating</h3>
+                <hr class="my-4 border-gray-300">
+                <div class="text-center text-lg font-bold mb-4">
+                    Total Strain Index (SI) = ${document.getElementById('strainIndexResult').textContent}
+                </div>
+                <h3 class="text-2xl mt-8 font-semibold text-blue-700">Result Key</h3>
+                <hr class="my-4 border-gray-300">
+                <div class="result-box ${document.getElementById('resultKey').className.split(' ').filter(c => ['safe', 'risk', 'hazardous'].includes(c)).join(' ')}">
+                    ${document.getElementById('resultKey').innerHTML}
+                </div>
+            </div>
+
+            <div id="page-3" class="printable-page">
+                <h3 class="text-2xl font-semibold mb-4 text-blue-700">Final Details</h3>
+                <hr class="my-4 border-gray-300">
+                <div class="grid-col-2">
+                    <div><b>Assessed By:</b> <span class="pl-2">${document.getElementById('assessedBy').value}</span></div>
+                    <div><b>Reviewed By:</b> <span class="pl-2">${document.getElementById('reviewedBy').value}</span></div>
+                    <div><b>Date:</b> <span class="pl-2">${document.getElementById('date').value}</span></div>
+                    <div><b>Prepared by:</b> <span class="pl-2">${document.getElementById('preparedBy').value}</span></div>
+                </div>
+                <div class="privacy-statement mt-8">
+                    <p>Intended for Fresh Frontiers Consultancy</p>
+                    <p class="mt-2">Privacy & Confidentiality Statement: All information collected is kept confidential and used solely for ergonomics assessment purposes.</p>
+                </div>
+                <footer class="text-center mt-4">
+                    <p>&copy; Fresh Frontiers Consultancy Pvt. Ltd. | All Rights Reserved</p>
+                </footer>
+            </div>
+        `;
+
+        // Show loading indicator
+        loadingOverlay.style.display = 'flex';
+
+        try {
+            const pdf = new jsPDF('p', 'pt', 'a4');
+            const pages = printableReport.children;
+
+            for (let i = 0; i < pages.length; i++) {
+                const page = pages[i];
+                const canvas = await html2canvas(page, { scale: 2, logging: false });
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 595.28; // A4 width in pt
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                if (i > 0) {
+                    pdf.addPage();
+                }
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            }
+
+            pdf.save('FreshFrontiers_Ergonomic_Assessment.pdf');
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+        } finally {
+            // Hide loading indicator
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => {
+            if (select.options.length > 0) {
+                select.selectedIndex = 0;
+            }
+        });
+        
+        updateStrainIndex();
+        
+        document.getElementById('save-pdf-btn').addEventListener('click', generatePDF);
+    });
+</script>
+
+</body>
+</html>
